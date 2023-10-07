@@ -90,6 +90,9 @@ class sgpg:
                         #LEFT
                         if self.eventclbk.get("PG_MBUTTONDOWN") != None:
                             self.eventclbk["PG_MBUTTONDOWN"](event.pos[0], event.pos[1])
+                elif event.type == pygame.locals.KEYDOWN:
+                    if self.eventclbk.get("PG_KEYDOWN") != None:
+                        self.eventclbk["PG_KEYDOWN"](event.dict["unicode"], event.dict["scancode"])
                 elif event.type == pygame.locals.WINDOWRESIZED:
                     if self.eventclbk.get("PG_WINDOWRESIZED") != None:
                         self.eventclbk["PG_WINDOWRESIZED"](self.surface.get_width(), self.surface.get_height())

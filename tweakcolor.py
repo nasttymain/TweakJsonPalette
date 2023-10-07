@@ -11,7 +11,8 @@ import os.path
 
 sg = None
 csel = [0, 0] # [縦、横]
-colordata = {"color":[{"colors": [16711680]}]}
+cscroll = 0
+colordata = {"color":[{"name": "", "colors": [16711680]}]}
 if len(sys.argv) >= 2:
     if os.path.isfile(sys.argv[1]):
         with open(sys.argv[1], mode="r") as f:
@@ -19,10 +20,10 @@ if len(sys.argv) >= 2:
 
 
 def mbuttondown(mx: int, my: int):
-    global colordata, sg, csel
+    global colordata, sg, csel, cscroll
     if 40 < mx < 260 and 40 < my < 320 and len(colordata["color"]) > (my - 40) // 20:
         #色列
-        csel[0] = (my - 40) // 20
+        csel[0] = (my - 40) // 20 + cscroll
         if len(colordata["color"][csel[0]]["colors"]) <= csel[1]:
             # 列縮小による補正
             csel[1] = len(colordata["color"][csel[0]]["colors"]) - 1
@@ -36,7 +37,7 @@ def mbuttondown(mx: int, my: int):
                 if color[0] != None:
                     #print(color[0][0] * 65536 + color[0][1] * 256 + color[0][2])
                     colordata["color"][csel[0]]["colors"].append(color[0][0] * 65536 + color[0][1] * 256 + color[0][2])
-    if 340 < mx < 560 and my >= 120 and (my - 120) % 50 < 40:
+    elif 340 < mx < 560 and my >= 120 and (my - 120) % 50 < 40:
         #機能ボタンの中
         if ((my - 120) // 50) == 0:
             #開く
@@ -72,26 +73,40 @@ def mbuttondown(mx: int, my: int):
                     # 列自体が消滅した
                     del(colordata["color"][csel[0]])
                     csel[0] = max(0, csel[0] - 1)
-    if 80 < mx < 220 and 350 < my < 380:
+    elif 80 < mx < 220 and 350 < my < 380:
+        #列を追加ボタン
         colordata["color"].append({"name": "", "colors":[0]})
         csel[0] = len(colordata["color"]) - 1
         csel[1] = 0
+    elif 20 < mx < 60 and 40 < my < 60:
+        #上スクロールボタン
+        cscroll -= 1
+    elif 20 < mx < 60 and 320 < my < 360:
+        #上スクロールボタン
+        cscroll += 1
     draw_all()
     pass
 
 def windowresized(w, h):
-    global colordata, sg, csel
+    global colordata, sg, csel, cscroll
     draw_all()
 
 def draw_all():
-    global colordata, sg, csel
+    global colordata, sg, csel, cscroll
+    #区切り線
     sg.clear()
     sg.align("left")
     sg.pos(0, 0)
     sg.color(0, 0, 0)
     sg.line(300, 0, 300, 400)
-    for rcnt, row in enumerate(colordata["color"]):
-        if csel[0] == rcnt:
+
+    #色列
+    cscroll = max(0, cscroll)
+    cscroll = max(0, min(cscroll, len(colordata["color"]) - 15))
+    cstart = cscroll
+    cend = min(cstart + 15, len(colordata["color"]))
+    for rcnt, row in enumerate(colordata["color"][cstart:cend]):
+        if csel[0] - cscroll == rcnt:
             sg.color(255, 192, 192)
             sg.box(40, 40 + rcnt * 20, 260, 40 + rcnt * 20 + 20, 1)
             sg.pos(40, 40 + rcnt * 20)
@@ -100,30 +115,41 @@ def draw_all():
         sg.color(0, 0, 0)
         sg.pos(60, 40 + rcnt * 20)
         sg.align("left")
-        sg.text(rcnt + 1)
-        for ccnt, col in enumerate(colordata["color"][rcnt]["colors"]):
+        sg.text(rcnt + cstart + 1)
+        for ccnt, col in enumerate(colordata["color"][rcnt + cstart]["colors"]):
+            #各色
             sg.rgbcolor(col)
             sg.fill(80 + ccnt * 40, 40 + rcnt * 20, 110 + ccnt * 40, 40 + rcnt * 20 + 20)
             sg.color(128, 128, 128)
             sg.box(80 + ccnt * 40, 40 + rcnt * 20, 110 + ccnt * 40, 40 + rcnt * 20 + 20)
-            #
-            sg.color(32, 32, 32)
-            sg.box(240, 40 + rcnt * 20, 260, 40 + rcnt * 20 + 20)
-            sg.align("center")
-            sg.pos(250, 50 + rcnt * 20)
-            sg.text("+")
-
+        #+ボタン
+        sg.color(32, 32, 32)
+        sg.box(240, 40 + rcnt * 20, 260, 40 + rcnt * 20 + 20)
+        sg.align("center")
+        sg.pos(250, 50 + rcnt * 20)
+        sg.text("+")
+    #色を追加ボタン
     sg.color(32, 32, 32)
     sg.box(80, 350, 220, 380)
     sg.align("center")
     sg.pos(150, 365)
     sg.text("行を追加")
+    #スクロールボタン
+    sg.color(32, 32, 32)
+    sg.align("center")
+    sg.box(20, 40, 40, 60)
+    sg.pos(30, 50)
+    sg.text("^")
+    sg.box(20, 320, 40, 340)
+    sg.pos(30, 330)
+    sg.text("v")
     #プロパティ
     sg.color(0, 0, 0)
     sg.align("center")
     sg.pos(450, 40)
     sg.text("行 " + str(csel[0] + 1) + ", 列 " + str(csel[1] + 1))
     if colordata["color"] != [] and colordata["color"][csel[0]]["colors"] != []:
+        #選択中の色
         sg.rgbcolor(colordata["color"][csel[0]]["colors"][csel[1]])
         sg.fill(360, 50, 380, 70)
         sg.color(0, 0, 0)
@@ -141,7 +167,7 @@ def draw_all():
         sg.pos(450, 80)
         if "name" in colordata["color"][csel[0]]:
             sg.text(colordata["color"][csel[0]]["name"])
-    #機能
+    #機能ボタン
     sg.color(0, 0, 0)
     for i in range(5):
         buttontext = ["ファイルを開く", "ファイルに保存", "色を編集", "行の名前を変更", "削除"]
@@ -150,18 +176,27 @@ def draw_all():
         sg.pos(450, 140 + 50 * i)
         sg.text(buttontext[i])
 
+def keydown(c, s):
+    global colordata, sg, csel, cscroll
+    if s == 82:
+        #↑
+        cscroll = cscroll - 1
+        pass
+    elif s == 81:
+        #↓
+        cscroll = cscroll + 1
+        pass
+    draw_all()
 
 def main():
-    global colordata, sg
-#    with open("color.json") as f:
-#        colordata = json.loads(f.read())
-    #print(colordata)
+    global colordata, sg, csel, cscroll
     sg = sgpg()
     sg.screen(0, 600, 400)
     sg.title("Palette Tweaker")
     sg.font("ipaexg.ttf")
     sg.neweventhandler("PG_MBUTTONDOWN", mbuttondown)
     sg.neweventhandler("PG_WINDOWRESIZED", windowresized)
+    sg.neweventhandler("PG_KEYDOWN", keydown)
     draw_all()
     sg.stop()
     sg.end()
