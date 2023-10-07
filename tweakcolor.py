@@ -116,7 +116,7 @@ def draw_all():
         sg.color(0, 0, 0)
         sg.pos(60, 40 + rcnt * 20)
         sg.align("left")
-        sg.text(rcnt + cstart + 1)
+        sg.text(format(rcnt + cstart + 1, "<2d"))
         for ccnt, col in enumerate(colordata["color"][rcnt + cstart]["colors"]):
             #各色
             sg.rgbcolor(col)
