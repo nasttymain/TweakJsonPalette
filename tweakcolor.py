@@ -45,6 +45,7 @@ def mbuttondown(mx: int, my: int):
             if fn != None and fn != "":
                 with open(fn, mode="r") as f:
                     colordata = json.loads(f.read())
+            csel = [0, 0]
         elif ((my - 120) // 50) == 1:
             #保存
             fn = tkinter.filedialog.asksaveasfilename(filetypes=[("json", "json")])
